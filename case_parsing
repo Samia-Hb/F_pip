@@ -1,0 +1,6 @@
+=>c3r8p5% <infile.txt p/ls -l/ | /cat -e/ > outfile.txt
+    zsh: no such file or directory: p/ls
+    zsh: no such file or directory: /cat
+=>c3r8p5% <infile.txt pls -l/ | /cat -e/ > outfile.txt 
+    zsh: command not found: pls
+    zsh: no such file or directory: /cat

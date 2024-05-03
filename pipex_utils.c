@@ -6,7 +6,7 @@
 /*   By: shebaz <shebaz@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/02/24 01:23:19 by shebaz            #+#    #+#             */
-/*   Updated: 2024/04/26 18:02:34 by shebaz           ###   ########.fr       */
+/*   Updated: 2024/05/03 15:59:00 by shebaz           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,36 +45,36 @@ char	*ft_strcat(char *dest, char *src)
 }
 
 
-char *get_executable(char *command, char *path)
-{
-    int  i;
-    char *full_path;
-    char **dir;
+// char *get_executable(char *command, char *path)
+// {
+//     int  i;
+//     char *full_path;
+//     char **dir;
 
-    i = 0;
-    dir = ft_split(path,':');
+//     i = 0;
+//     dir = ft_split(path,':');
     
-    while (dir[i])
-    {
-        full_path = malloc(strlen(dir[i]) + strlen(command) + 2);
-        if(full_path == NULL)
-        {
-            perror("malloc");
-        	exit(1);
-        }
-        strcpy(full_path, dir[i]);
-        strcat(full_path, "/");
-        strcat(full_path, command);
-        if (access(full_path, X_OK) == 0)
-            break;
-        free(full_path);
-        i++;
-    }
-    free(dir);
-    if(dir[i])
-        return (full_path);
-    return (NULL);
-}
+//     while (dir[i])
+//     {
+//         full_path = malloc(strlen(dir[i]) + strlen(command) + 2);
+//         if(full_path == NULL)
+//         {
+//             perror("malloc");
+//         	exit(1);
+//         }
+//         strcpy(full_path, dir[i]);
+//         strcat(full_path, "/");
+//         strcat(full_path, command);
+//         if (access(full_path, X_OK) == 0)
+//             break;
+//         free(full_path);
+//         i++;
+//     }
+//     //free(dir);
+//     if(dir[i])
+//         return (full_path);
+//     return (NULL);
+// }
 
 
 

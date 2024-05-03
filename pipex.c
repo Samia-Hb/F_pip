@@ -1,131 +1,100 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   pipex.c                                            :+:      :+:    :+:   */
+/*   pipex1.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: shebaz <shebaz@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/04/30 15:12:24 by shebaz            #+#    #+#             */
-/*   Updated: 2024/05/01 10:31:01 by shebaz           ###   ########.fr       */
+/*   Created: 2024/03/09 16:35:00 by shebaz            #+#    #+#             */
+/*   Updated: 2024/05/02 15:43:47 by shebaz           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex.h"
 
-char *get_full_path(char **envp)
+
+void execute_cmd1(int pipe_fd_0, int pipe_fd_1, char *cmd1, char *infile, char **envp)
 {
-	int	i;
-	
-	i = 0;
-	while (envp[i])
-	{
-		if (ft_strncmp(envp[i], "PATH=", 5) == 0)
-			return (envp[i]);
-		i++;
-	}
-	return (NULL);
+	int		infile_fd;
+	char	**new_arr;
+    char	*command_path;
+    (void)(pipe_fd_0);
+    
+    close(pipe_fd_0);
+    dup2(pipe_fd_1, STDOUT_FILENO);// Redirect stdout to the pipe : anything write to stdout will git into the pipe's buffer
+    close(pipe_fd_1);
+    infile_fd = open(infile, O_RDONLY,0777);
+    if (infile_fd == -1)
+    {
+        perror("zsh");
+        exit(0);
+    }
+    dup2(infile_fd, STDIN_FILENO); // Redirect stdin to the input file
+    close(infile_fd);
+    new_arr = arr(cmd1);
+    command_path = get_executable(new_arr[0], find_path(envp));
+    execve(command_path,new_arr,envp);
+    free(new_arr);
+    exit(1);//get out of the process
 }
 
-char *get_path(char *argv,char **envp)
+void execute_cmd2(int pipe_fd_0,int pipe_fd_1,char *cmd2,char *outfile,char **envp)
 {
-	int		i;
-	char	*full_path;
-	char	**arr;
-	char	*command_path;
-	char	**path_arr;
-	char	*cmd;
+    int outfile_fd;
+    char **new_arr;
+    char *command_path;
 
-	full_path = get_full_path(envp);
-	arr = ft_split(argv,' ');
-	cmd = arr[0];
-	i = 0;
-	path_arr = ft_split(full_path, ':');
-	while (path_arr[i])
-	{
-		command_path = ft_strjoin(path_arr[i], "/", cmd);
-		if (access(command_path , X_OK) == 0)
-			return (path_arr[i]);
-		free(command_path);
-		i++;
-	}
-	return (NULL);
-}
-int get_executable(char *cmd, char *command_path)
-{
-	char *full_path;
-	
-	full_path = ft_strjoin(command_path, "/" , cmd);
-	if (access(full_path, X_OK) == 0)
-		return (1);
-	return (0);
-}
-void	check_cmd(char **arr)
-{
-	int	i;
-	char c;
-	
-	i = 0;
-	c = 39;
-	while(arr[i])
-	{
-		if(arr[i][0] == c)
-			ft_strtrim(arr[i], "'");
-		i++;
-	}
-}
-void	check_full_command(char **argv,char **arr1,char **arr2)
-{
-	char c = 39;
-	
-	if (argv[2][0] == '/' )
-		printf("zsh: no such file or directory: %s\n",arr1[0]);
-	else if (argv[2][0] == c)
-		printf("zsh: command not found: %s\n", argv[2]);
-	if (argv[3][0] == '/')
-		printf("zsh: no such file or directory: %s\n",arr2[0]);
-	else if (argv[3][0] == c)
-		printf("zsh: command not found: %s\n", argv[3]);
+    close(pipe_fd_1);
+    dup2(pipe_fd_0, STDIN_FILENO); // Redirect stdin to the pipe
+    close(pipe_fd_0);
+    outfile_fd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0777);
+    if (outfile_fd == -1)
+        exit(1);
+    dup2(outfile_fd, STDOUT_FILENO);
+    close(outfile_fd);
+    new_arr = arr(cmd2); 
+    command_path = get_executable(new_arr[0], find_path(envp));
+    execve(command_path, new_arr, envp);
+    free(new_arr);
+    exit(1);
 }
 
-void check_argument(int argc, char **argv, char **envp)
+void norm(int pipe_fd_0, int pipe_fd_1,int pid1,int pid2)
 {
-	(void)(argc);
-	char **arr1 = ft_split(argv[2], ' ');
-	char **arr2 = ft_split(argv[3], ' ');
-	check_full_command(argv, arr1, arr2);
-	check_cmd(arr1);
-	check_cmd(arr2);
-	if (access(argv[1], F_OK) != 0)
-	{
-		printf("zsh: no such file or directory: %s\n",argv[1]);
-		if (get_executable(arr2[0], get_path(argv[3],envp)) == 0)
-			printf("zsh: command not found: %s\n",arr2[0]);
-		printf("check1\n");
-		exit(1);
-	}
-	else
-	{
-		if (get_executable(arr1[0], get_path(argv[2],envp)) == 0)
-		{
-			printf("zsh: command not found: %s\n",arr1[0]);			
-			exit(1);
-		}
-		if (get_executable(arr2[0], get_path(argv[3],envp)) == 0)
-		{	
-			printf("zsh: command not found: %s\n",arr2[0]);
-			exit(1);
-		}
-	}
+    close(pipe_fd_0);
+    close(pipe_fd_1);
+    waitpid(pid1, NULL, 0);
+    waitpid(pid2, NULL, 0);
+}
+void execute_commands(char *cmd1, char *cmd2, char *infile, char *outfile,char **envp)
+{
+    int pipefd[2];
+    if (pipe(pipefd) == -1)
+    {
+        perror("pipe");
+        exit(1);
+    }
+    int pid1 = fork();
+    if (pid1 == -1)
+    {
+        perror("fork");
+        exit(1);
+    }
+    else if(pid1 == 0)
+        execute_cmd1(pipefd[0], pipefd[1], cmd1, infile, envp); 
+    else
+    {
+        int pid2 = fork();
+        if (pid2 == -1) 
+        {
+            perror("fork");
+            exit(1);
+        }
+        else if (pid2 == 0)
+          execute_cmd2(pipefd[0],pipefd[1],cmd2,outfile,envp);
+        else
+            norm(pipefd[0],pipefd[1],pid1,pid2);
+    }
 }
 
 
-int main(int argc , char **argv, char **envp)
-{
-    if (argc == 5)
-	{
-        check_argument(argc, argv, envp);
-		execute_commands(argv,envp,get_full_path(envp));
-	}
-	else
-        printf(" five arguments needed\n");
-}
